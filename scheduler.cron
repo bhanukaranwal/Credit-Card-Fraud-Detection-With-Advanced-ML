@@ -1,0 +1,4 @@
+# Retrain model every night at 3:05am
+5 3 * * * python /app/src/scheduled_retrainer.py
+# Run fairness audit daily at 4:00am
+0 4 * * * python /app/src/fairness_audit.py
