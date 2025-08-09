@@ -1,0 +1,140 @@
+version: "3.8"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: fraud_api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./data:/app/data
+    depends_on:
+      - db
+      - prometheus
+    networks:
+      - fraud_net
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: fraud_dashboard
+    restart: always
+    ports:
+      - "8501:8501"
+    env_file: .env
+    depends_on:
+      - api
+    networks:
+      - fraud_net
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: fraud_scheduler
+    restart: always
+    env_file: .env
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./data:/app/data
+    depends_on:
+      - api
+      - db
+    networks:
+      - fraud_net
+
+  kafka_consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka_consumer
+    container_name: fraud_kafka_consumer
+    restart: always
+    env_file: .env
+    depends_on:
+      - api
+      - kafka
+    networks:
+      - fraud_net
+
+  db:
+    image: postgres:15
+    container_name: fraud_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - fraud_net
+    ports:
+      - "5432:5432"
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: fraud_kafka
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    ports:
+      - "9092:9092"
+    networks:
+      - fraud_net
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: fraud_zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    networks:
+      - fraud_net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fraud_prometheus
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - fraud_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fraud_grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - fraud_net
+
+volumes:
+  pgdata:
+
+networks:
+  fraud_net:
+    driver: bridge
