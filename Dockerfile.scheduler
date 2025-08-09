@@ -1,0 +1,12 @@
+FROM python:3.10-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ ./src
+COPY models/ ./models
+COPY data/ ./data
+RUN apt-get update && apt-get install -y wget && \
+    wget -O /usr/local/bin/supercronic https://github.com/aptible/supercronic/releases/download/v0.2.29/supercronic-linux-amd64 && \
+    chmod +x /usr/local/bin/supercronic
+COPY scheduler.cron /scheduler.cron
+CMD ["/usr/local/bin/supercronic", "/scheduler.cron"]
