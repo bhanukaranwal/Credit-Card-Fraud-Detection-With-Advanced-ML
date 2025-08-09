@@ -1,0 +1,28 @@
+{
+  "title": "Fraud Detection Metrics",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Fraud Rate Over Time",
+      "targets": [
+        { "expr": "fraud_flags_total / fraud_predictions_total", "legendFormat": "Fraud Rate" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Model Retraining Count",
+      "targets": [
+        { "expr": "fraud_model_retraining_total", "legendFormat": "Retrains" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Fairness Gap (Gender)",
+      "targets": [
+        { "expr": "fairness_gap_gender", "legendFormat": "Gender Gap" }
+      ]
+    }
+  ],
+  "schemaVersion": 27,
+  "version": 1
+}
